@@ -1,6 +1,8 @@
 # /etc/systemd/system/i2c-accel.service
 [Unit]
 Description=Program to Monitor an I2C Accelerometer, Controlled by GPIO
+After=dev-i2c\x2d1.device
+Requires=dev-i2c\x2d1.device
 
 [Service]
 Type=forking

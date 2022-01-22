@@ -18,6 +18,7 @@
 #include <signal.h>
 
 #define RECORD_INTERVAL_USEC 10000
+#define MAX_GPIO_ATTEMPTS 5
 
 uint32_t ADAPTER_NO = 1;
 uint8_t DEV_ADDR = 0x18;

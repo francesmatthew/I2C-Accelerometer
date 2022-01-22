@@ -15,7 +15,7 @@ bool devWrite(int fd, uint8_t reg, uint8_t val) {
 bool devRead(int fd, char* buffer, uint32_t reg, uint32_t size) {
   // fd: file descriptor of i2c device
   // buffer: byte array that relevant data will be read to
-  //   **buffer size **must** be larger than 'size'
+  //   buffer size **must** be larger than 'size'
   // reg: address of register to start reading data at
   // size: number of bytes to read
   // returns 0 on success, 1 on failure
@@ -207,11 +207,17 @@ int main() {
       }
   // set pin direction
   usleep(500000);
-  if (setPinDirection(SWITCH, IN) |
-      setPinDirection(GREEN_LED, OUT) |
-      setPinDirection(BLUE_LED, OUT) |
-      setPinDirection(RED_LED, OUT)) {
-      perror("GPIO direction setting failed\n");
+  for (int i = 1; i <= MAX_GPIO_ATTEMPTS; i++) {
+    if (setPinDirection(SWITCH, IN) |
+        setPinDirection(GREEN_LED, OUT) |
+        setPinDirection(BLUE_LED, OUT) |
+        setPinDirection(RED_LED, OUT)) {
+          perror("GPIO direction setting failed\n");
+          usleep(500000);
+    }
+    else {
+      break;
+    }
   }
   // inital pin settings
   if (changeLEDState(PROCESSING)) {
