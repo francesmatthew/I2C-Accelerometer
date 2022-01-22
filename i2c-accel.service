@@ -1,0 +1,16 @@
+# /etc/systemd/system/i2c-accel.service
+[Unit]
+Description=Program to Monitor an I2C Accelerometer, Controlled by GPIO
+
+[Service]
+Type=forking
+User=pi
+Group=pi
+SupplementaryGroups=i2c gpio
+WorkingDirectory=/home/pi/I2C-Accelerometer
+#ExecStart=/home/pi/I2C-Accelerometer/i2c-accel
+ExecStart=/home/pi/I2C-Accelerometer/start.sh
+ExecStop=/home/pi/I2C-Accelerometer/stop.sh
+
+[Install]
+WantedBy=multi-user.target

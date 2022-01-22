@@ -67,11 +67,11 @@ int recordDataLoop(int i2c_fd) {
   // wait for the user to let off the button
   char sw_state = 0;
   while (1) {
-    getPinValue(SWITCH, &sw_state);
+    if ( getPinValue(SWITCH, &sw_state) ) { perror("GPIO get pin value failed\n"); }
     if (sw_state == HIGH) {
       // wait 10ms to debounce switch
       usleep(10000);
-      getPinValue(SWITCH, &sw_state);
+      if ( getPinValue(SWITCH, &sw_state) ) { perror("GPIO get pin value failed\n"); }
       if (sw_state == HIGH) {
         break;
       }
@@ -140,11 +140,11 @@ int recordDataLoop(int i2c_fd) {
       write(output_fd, output_line, strlen(output_line));
 
       // poll input to check if continuing
-      getPinValue(SWITCH, &sw_state);
+      if ( getPinValue(SWITCH, &sw_state) ) { perror("GPIO get pin value failed\n"); }
       if (sw_state == LOW) {
         // wait 10ms to debounce switch
         usleep(10000);
-        getPinValue(SWITCH, &sw_state);
+        if ( getPinValue(SWITCH, &sw_state) ) { perror("GPIO get pin value failed\n"); }
         if (sw_state == LOW) {
           break;
         }
@@ -157,11 +157,11 @@ int recordDataLoop(int i2c_fd) {
     close(output_fd);
     // wait for the user to let off the button
     while (1) {
-      getPinValue(SWITCH, &sw_state);
+      if ( getPinValue(SWITCH, &sw_state) ) { perror("GPIO get pin value failed\n"); }
       if (sw_state == HIGH) {
         // wait 10ms to debounce switch
         usleep(10000);
-        getPinValue(SWITCH, &sw_state);
+        if ( getPinValue(SWITCH, &sw_state) ) { perror("GPIO get pin value failed\n"); }
         if (sw_state == HIGH) {
           break;
         }
@@ -233,11 +233,11 @@ int main() {
     }
     while (1) {
       // poll if switch is turned on
-      getPinValue(SWITCH, &sw_state);
+      if ( getPinValue(SWITCH, &sw_state) ) { perror("GPIO get pin value failed\n"); }
       if (sw_state == LOW) {
         // de-bounce the switch, wait 10ms
         usleep(10000);
-        getPinValue(SWITCH, &sw_state);
+        if ( getPinValue(SWITCH, &sw_state) ) { perror("GPIO get pin value failed\n"); }
         if (sw_state == LOW) {
           // register a button press
           if (changeLEDState(PROCESSING)) {

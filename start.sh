@@ -1,3 +1,4 @@
+#!/bin/sh
 PROG_DIR="/home/pi/I2C-Accelerometer"
 
 # create pipe to eventually stop the program
@@ -6,6 +7,6 @@ sleep infinity > ${PROG_DIR}/in.fifo &
 echo $! > ${PROG_DIR}/sleep.pid
 
 cd ${PROG_DIR}
-`${PROG_DIR}/i2c-accel < ${PROG_DIR}/in.fifo` &
+${PROG_DIR}/i2c-accel < ${PROG_DIR}/in.fifo  2>&1 &
 echo $! > ${PROG_DIR}/prog.pid
 exit 0

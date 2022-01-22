@@ -1,3 +1,4 @@
+#!/bin/sh
 PROG_DIR="/home/pi/I2C-Accelerometer"
 
 echo stop > ${PROG_DIR}/in.fifo
@@ -16,8 +17,7 @@ do
  if [ $WAITSECS -ge $MAXWAITSECS ]
  then
  # forcible kill the process
- PROG_PID=`cat ${PROG_PID}/prog.pid`
- kill -9 ${PROG_PID} > /dev/null 2>&1
+ kill -9 =`cat ${PROG_DIR}/prog.pid` > /dev/null 2>&1
  fi
  sleep 1
  pgrepTest
@@ -25,7 +25,9 @@ do
 done
 
 # remove the process keeping the fifo open
-kill -9 `cat ${PROG_PID}/sleep.pid` >  /dev/null 2>&1
-# clean up fifo
-rm -f ${PROG_PID}/in.fifo
+kill -9 `cat ${PROG_DIR}/sleep.pid` >  /dev/null 2>&1
+# clean up
+rm -f ${PROG_DIR}/in.fifo
+rm -f prog.pid
+rm -f sleep.pid
 exit 0
