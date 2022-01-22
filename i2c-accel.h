@@ -12,6 +12,10 @@
 #include <sys/time.h>
 #include <string.h>
 #include <errno.h>
+#include "pi-gpio.h"
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <signal.h>
 
 #define RECORD_INTERVAL_USEC 10000
 
@@ -21,12 +25,18 @@ uint8_t DEV_ADDR = 0x18;
 float SENSITIVITY = 0.004;
 uint8_t XYZ_DATA_REG = 0x28;
 uint32_t XYZ_DATA_LEN = 6;
+typedef enum {RECORDING, PROCESSING, READY} led_state_t;
+
+#define SWITCH 4
+#define GREEN_LED 18
+#define BLUE_LED 15
+#define RED_LED 14
 
 bool devWrite(int fd, uint8_t reg, uint8_t val);
 bool devRead(int fd, char* buffer, uint32_t reg, uint32_t size);
 int openI2CBus(uint32_t adapterNo, uint8_t addr);
 bool writeAccelConfig(int i2c_fd);
 int recordDataLoop(int i2c_fd);
-bool getSwitchState();
+int changeLEDState(led_state_t state);
 
 #endif

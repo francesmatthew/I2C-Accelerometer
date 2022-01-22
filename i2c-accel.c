@@ -64,6 +64,20 @@ bool writeAccelConfig(int i2c_fd) {
 }
 
 int recordDataLoop(int i2c_fd) {
+  // wait for the user to let off the button
+  char sw_state = 0;
+  while (1) {
+    getPinValue(SWITCH, &sw_state);
+    if (sw_state == HIGH) {
+      // wait 10ms to debounce switch
+      usleep(10000);
+      getPinValue(SWITCH, &sw_state);
+      if (sw_state == HIGH) {
+        break;
+      }
+    }
+    usleep(10000);
+  }
   // open a file to output data
   // a time struct is required to track millisecond values
   time_t start_time = time(NULL);
@@ -89,6 +103,9 @@ int recordDataLoop(int i2c_fd) {
   // initialize time structures
   struct timeval tval_before, tval_after, tval_result;
   gettimeofday(&tval_before, NULL);
+  if (changeLEDState(RECORDING)) {
+        perror("GPIO set pin value failed\n");
+    }
   while(1) {
 
     if (devRead(i2c_fd, buffer, 0x28, 6)) {
@@ -123,15 +140,47 @@ int recordDataLoop(int i2c_fd) {
       write(output_fd, output_line, strlen(output_line));
 
       // poll input to check if continuing
-      if (getSwitchState()) { usleep(RECORD_INTERVAL_USEC); }
-      else { break; }
+      getPinValue(SWITCH, &sw_state);
+      if (sw_state == LOW) {
+        // wait 10ms to debounce switch
+        usleep(10000);
+        getPinValue(SWITCH, &sw_state);
+        if (sw_state == LOW) {
+          break;
+        }
+      }
+      usleep(RECORD_INTERVAL_USEC);
+    }
+    if (changeLEDState(PROCESSING)) {
+          perror("GPIO set pin value failed\n");
     }
     close(output_fd);
+    // wait for the user to let off the button
+    while (1) {
+      getPinValue(SWITCH, &sw_state);
+      if (sw_state == HIGH) {
+        // wait 10ms to debounce switch
+        usleep(10000);
+        getPinValue(SWITCH, &sw_state);
+        if (sw_state == HIGH) {
+          break;
+        }
+      }
+      usleep(10000);
+    }
     return 0;
 }
 
-bool getSwitchState() {
-  return 1;
+int changeLEDState(led_state_t state) {
+  if (state == RECORDING) {
+    return (setPinValue(GREEN_LED, LOW) | setPinValue(BLUE_LED, LOW) | setPinValue(RED_LED, HIGH));
+  }
+  else if (state == READY) {
+    return (setPinValue(GREEN_LED, HIGH) | setPinValue(BLUE_LED, LOW) | setPinValue(RED_LED, LOW));
+  }
+  else {
+    return (setPinValue(GREEN_LED, LOW) | setPinValue(BLUE_LED, HIGH) | setPinValue(RED_LED, LOW));
+  }
 }
 
 int main() {
@@ -139,31 +188,87 @@ int main() {
   int i2c_fd = openI2CBus(ADAPTER_NO, DEV_ADDR);
   if (i2c_fd < 0) {
     printf("Failed to acquire bus access\n");
-    return 1;
+    return -1;
   }
   // setup control registers
   if (writeAccelConfig(i2c_fd)) {
     printf("Failed to configure device\n");
     close(i2c_fd);
-    return 1;
+    return -1;
   }
 
   // setup GPIO
+  // export pins
+  if (exportGPIO(SWITCH) |
+      exportGPIO(GREEN_LED) |
+      exportGPIO(BLUE_LED) |
+      exportGPIO(RED_LED)) {
+          perror("GPIO export failed\n");
+      }
+  // set pin direction
+  usleep(500000);
+  if (setPinDirection(SWITCH, IN) |
+      setPinDirection(GREEN_LED, OUT) |
+      setPinDirection(BLUE_LED, OUT) |
+      setPinDirection(RED_LED, OUT)) {
+      perror("GPIO direction setting failed\n");
+  }
+  // inital pin settings
+  if (changeLEDState(PROCESSING)) {
+        perror("GPIO set pin value failed\n");
+    }
+  char sw_state = 0;
+  char stdin_buf[5] = {0};
+  pid_t c_pid = fork();
 
-
-  // poll input
-  while (1) {
-    // poll if switch is turned on
-    if (getSwitchState()) {
-      // de-bounce the switch, wait 10ms
-      usleep(10000);
-      if (getSwitchState()) {
-        // enter a loop of recording data
-        if (recordDataLoop(i2c_fd) < 0) {
-          close(i2c_fd);
-          return 1;
+  if (c_pid == -1) {
+      perror("failed to fork \n");
+      return -1;
+  }
+  if (c_pid == 0) {
+    // child thread
+    // poll input
+    if (changeLEDState(READY)) {
+      perror("GPIO set pin value failed\n");
+    }
+    while (1) {
+      // poll if switch is turned on
+      getPinValue(SWITCH, &sw_state);
+      if (sw_state == LOW) {
+        // de-bounce the switch, wait 10ms
+        usleep(10000);
+        getPinValue(SWITCH, &sw_state);
+        if (sw_state == LOW) {
+          // register a button press
+          if (changeLEDState(PROCESSING)) {
+                perror("GPIO set pin value failed\n");
+          }
+          if (recordDataLoop(i2c_fd) < 0) {
+            perror("error in recording data\n");
+          }
+          if (changeLEDState(READY)) {
+            perror("GPIO set pin value failed\n");
+          }
         }
       }
+    }
+  }
+  else {
+    // parent thread reads stdin
+    if (read(0, stdin_buf, 5) == 5) {
+      if (strcmp(stdin_buf, "stop\0")) {
+          if (kill(c_pid, SIGTERM) == -1) {
+            perror("error killing child process\n");
+          }
+          wait(0);
+          if (unexportGPIO(SWITCH) |
+              unexportGPIO(GREEN_LED) |
+              unexportGPIO(BLUE_LED) |
+              unexportGPIO(RED_LED)) {
+            perror("GPIO unexport failed\n");
+          }
+          return 0;
+        }
     }
   }
 
