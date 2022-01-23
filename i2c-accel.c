@@ -84,7 +84,7 @@ int recordDataLoop(int i2c_fd) {
   struct tm time_struct = *localtime(&start_time);
   // create a name for the output file based on the current time
   char output_filename[30] = {0};
-  snprintf(output_filename, 30, "data/%4d-%02d-%02d:%02d-%02d-%02d.csv", \
+  snprintf(output_filename, 30, OUTPUT_FILENAME_TEMPLATE, \
     time_struct.tm_year+1900, time_struct.tm_mon+1, time_struct.tm_mday, \
     time_struct.tm_hour, time_struct.tm_min, time_struct.tm_sec);
 

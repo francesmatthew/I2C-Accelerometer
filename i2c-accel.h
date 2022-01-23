@@ -32,6 +32,7 @@ typedef enum {RECORDING, PROCESSING, READY} led_state_t;
 #define GREEN_LED 18
 #define BLUE_LED 15
 #define RED_LED 14
+#define OUTPUT_FILENAME_TEMPLATE "data/%4d-%02d-%02d:%02d-%02d-%02d.csv"
 
 bool devWrite(int fd, uint8_t reg, uint8_t val);
 bool devRead(int fd, char* buffer, uint32_t reg, uint32_t size);
